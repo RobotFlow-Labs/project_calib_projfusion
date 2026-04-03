@@ -1,0 +1,55 @@
+[project]
+name = "anima-calib-projfusion"
+codename = "CALIB-PROJFUSION"
+paper_arxiv = "2603.29414"
+
+[model]
+image_hw = [224, 448]
+feature_dim = 384
+num_groups = 128
+group_size = 64
+harmonic_functions = 6
+projection_margin = 2.0
+attention_heads = 6
+aggregation_planes = 96
+mlp_hidden_dims = [128, 128]
+
+[training]
+batch_size = 256
+learning_rate = 5e-4
+weight_decay = 1e-2
+epochs = 30
+warmup_epochs = 2
+optimizer = "adamw"
+scheduler = "cosine-warmup"
+precision = "fp16"
+gradient_clip = 1.0
+seed = 42
+
+[data]
+dataset = "kitti"
+kitti_root = "/mnt/forge-data/datasets/kitti"
+nuscenes_root = "/mnt/forge-data/datasets/nuscenes"
+pcd_sample_num = 8192
+max_deg = 10.0
+max_tran = 0.5
+num_workers = 4
+train_ratio = 0.90
+val_ratio = 0.05
+
+[checkpoint]
+output_dir = "/mnt/artifacts-datai/checkpoints/project_calib_projfusion"
+keep_top_k = 2
+metric = "val_loss"
+mode = "min"
+
+[early_stopping]
+enabled = true
+patience = 10
+min_delta = 0.0001
+
+[logging]
+log_dir = "/mnt/artifacts-datai/logs/project_calib_projfusion"
+
+[pretrained]
+dinov2 = "/mnt/forge-data/models/calib_projfusion/dinov2_vits14_timm.pth"

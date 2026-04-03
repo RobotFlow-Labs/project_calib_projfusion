@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import torch
 
-from anima_calib_projfusion.data.camera_info import CameraInfo
 from anima_calib_projfusion.geometry.projection import align_point_groups
 
 
@@ -23,7 +22,7 @@ class ExtrinsicAwareAligner:
         self,
         xyz_groups: torch.Tensor,
         extrinsic: torch.Tensor,
-        camera_info: CameraInfo | dict[str, float | int],
+        camera_info: dict,
     ) -> torch.Tensor:
         return align_point_groups(
             xyz_groups=xyz_groups,
