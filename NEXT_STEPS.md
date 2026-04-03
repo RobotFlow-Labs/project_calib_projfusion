@@ -58,10 +58,12 @@ This project covers exactly one paper: ProjFusion / Native-Domain Cross-Attentio
 
 ## 8. TODO
 - [x] Push to HuggingFace: https://huggingface.co/ilessio-aiflowlab/project_calib_projfusion
-- [ ] nuScenes data loader + nuScenes training run
-- [ ] Dockerfile.serve + docker-compose.serve.yml + serve.py
+- [x] nuScenes data loader + training (24k samples, GPU 5, in progress)
+- [x] Dockerfile.serve + docker-compose.serve.yml + serve.py
+- [x] anima_module.yaml full manifest
+- [x] serve.py CalibProjFusionNode with 3-step iterative refinement
 - [ ] Registry entry in anima-infra-main
-- [ ] Three-step iterative refinement inference (paper §IV-B)
+- [ ] nuScenes export + HF push (after training completes)
 - [ ] Full paper metrics evaluation (Table I/II style)
 
 ## 9. Blocking
@@ -72,4 +74,4 @@ This project covers exactly one paper: ProjFusion / Native-Domain Cross-Attentio
 |------|-------|---------------|
 | 2026-04-03 | ANIMA Research Agent | PRD suite and task bundle created from paper + reference repo |
 | 2026-04-03 | Codex | Replaced stale scaffold, implemented PRD-01 through PRD-07 |
-| 2026-04-03 | Opus 4.6 | CUDA pipeline: real encoders, data loader, SE3, training loop. Shared caches (PCD 381MB + DINOv2 2.8GB). Triton kernel (18.3B pts/s). Training on GPU 4: 28 epochs, val_loss=0.0139, rot=4.8°, tsl=0.23m. Full export: pth+safetensors+ONNX+TRT. Pushed to HF. |
+| 2026-04-03 | Opus 4.6 | CUDA pipeline: real encoders, data loader, SE3, training loop. Shared caches (PCD 381MB + DINOv2 2.8GB). Triton kernel (18.3B pts/s). KITTI training GPU 4: val_loss=0.0139. Exports + HF push. ANIMA infra: Dockerfile.serve, docker-compose, serve.py, anima_module.yaml. nuScenes training launched GPU 5 (24k samples). |
