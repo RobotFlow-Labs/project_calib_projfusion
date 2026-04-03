@@ -57,7 +57,7 @@ This project covers exactly one paper: ProjFusion / Native-Domain Cross-Attentio
 - [x] Export pipeline (pth + safetensors + ONNX + TRT FP16/FP32)
 
 ## 8. TODO
-- [ ] Push to HuggingFace: ilessio-aiflowlab/project_calib_projfusion
+- [x] Push to HuggingFace: https://huggingface.co/ilessio-aiflowlab/project_calib_projfusion
 - [ ] nuScenes data loader + nuScenes training run
 - [ ] Dockerfile.serve + docker-compose.serve.yml + serve.py
 - [ ] Registry entry in anima-infra-main
@@ -72,4 +72,4 @@ This project covers exactly one paper: ProjFusion / Native-Domain Cross-Attentio
 |------|-------|---------------|
 | 2026-04-03 | ANIMA Research Agent | PRD suite and task bundle created from paper + reference repo |
 | 2026-04-03 | Codex | Replaced stale scaffold, implemented PRD-01 through PRD-07 |
-| 2026-04-03 | Opus 4.6 | CUDA pipeline: real encoders, data loader, SE3, training loop. Shared caches (PCD 381MB + DINOv2 2.8GB). Triton kernel (18.3B pts/s). Training on GPU 4: 28 epochs, val_loss=0.0139, rot=4.8°, tsl=0.23m. Full export: pth+safetensors+ONNX+TRT. |
+| 2026-04-03 | Opus 4.6 | CUDA pipeline: real encoders, data loader, SE3, training loop. Shared caches (PCD 381MB + DINOv2 2.8GB). Triton kernel (18.3B pts/s). Training on GPU 4: 28 epochs, val_loss=0.0139, rot=4.8°, tsl=0.23m. Full export: pth+safetensors+ONNX+TRT. Pushed to HF. |
