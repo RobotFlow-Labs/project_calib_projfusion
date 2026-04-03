@@ -1,0 +1,32 @@
+ARG ANIMA_SERVE_IMAGE=ghcr.io/robotflow-labs/anima-serve:jazzy
+
+FROM ${ANIMA_SERVE_IMAGE} AS serve
+
+ARG MODULE_NAME=calib-projfusion
+ARG MODULE_VERSION=0.1.0
+ARG HF_REPO=ilessio-aiflowlab/project_calib_projfusion
+ARG SERVE_PORT=8040
+
+# Install module Python package
+WORKDIR /app
+COPY pyproject.toml ./
+COPY README.md* ./
+COPY src/ src/
+COPY configs/ configs/
+RUN pip3 install --no-cache-dir --break-system-packages --no-deps . 2>/dev/null || true
+
+# Copy module manifest
+COPY anima_module.yaml /etc/anima/module.yaml
+
+# Module identity
+ENV ANIMA_MODULE_NAME=${MODULE_NAME}
+ENV ANIMA_MODULE_VERSION=${MODULE_VERSION}
+ENV ANIMA_HF_REPO=${HF_REPO}
+ENV ANIMA_SERVE_PORT=${SERVE_PORT}
+
+EXPOSE ${SERVE_PORT}
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -sf http://localhost:${SERVE_PORT}/health || exit 1
+
+CMD ["anima-serve", "start"]

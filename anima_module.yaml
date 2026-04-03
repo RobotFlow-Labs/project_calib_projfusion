@@ -4,12 +4,112 @@ wave: 7
 domain: calibration
 package: anima_calib_projfusion
 python: "3.11"
+version: "0.1.0"
+
 paper:
   arxiv: "2603.29414"
   title: "Native-Domain Cross-Attention for Camera-LiDAR Extrinsic Calibration Under Large Initial Perturbations"
+  venue: "IEEE RA-L 2026"
+
+capabilities:
+  - camera_lidar_calibration
+  - extrinsic_estimation
+  - cross_modal_fusion
+  - iterative_refinement
+
+model:
+  architecture: ProjDualFusion
+  params_total: 25.3M
+  params_trainable: 3.6M
+  image_encoder: DINOv2-ViT-S/14
+  point_encoder: PointGPT-tiny
+  feature_dim: 384
+  input_image: [3, 224, 448]
+  input_points: 8192
+  output: se3_lie_algebra_6d
+
+training:
+  datasets:
+    - name: kitti
+      samples: 7481
+      split: "6732/374/375"
+      best_val_loss: 0.0139
+      rot_err_deg: 4.8
+      tsl_err_m: 0.23
+    - name: nuscenes
+      samples: 34149
+      split: "80/10/10"
+      status: training
+  optimizer: AdamW
+  lr: 5e-4
+  batch_size: 256
+  precision: fp16
+  gpu: "NVIDIA L4 (23GB)"
+
+inference:
+  latency_avg_ms: 38.5
+  latency_p95_ms: 41.1
+  throughput_fps: 26
+  device: "NVIDIA L4"
+  refinement_steps: 3
+
+api:
+  framework: fastapi
+  port: 8040
+  endpoints:
+    - path: /health
+      method: GET
+    - path: /ready
+      method: GET
+    - path: /info
+      method: GET
+    - path: /predict
+      method: POST
+      input: "image + pointcloud + init_extrinsic + camera_info"
+      output: "corrected_extrinsic + rot_log + tsl_log"
+
+docker:
+  serve_image: "anima-calib-projfusion:latest"
+  base_image: "ghcr.io/robotflow-labs/anima-serve:jazzy"
+  dockerfile: Dockerfile.serve
+  compose: docker-compose.serve.yml
+  profiles:
+    - serve
+    - ros2
+    - api
+    - test
+
+ros2:
+  node_name: calib_projfusion_node
+  topics:
+    subscribe:
+      - name: /camera/image_raw
+        type: sensor_msgs/Image
+      - name: /lidar/points
+        type: sensor_msgs/PointCloud2
+      - name: /calibration/init_extrinsic
+        type: geometry_msgs/TransformStamped
+    publish:
+      - name: /calibration/corrected_extrinsic
+        type: geometry_msgs/TransformStamped
+      - name: /calibration/status
+        type: std_msgs/String
+
+huggingface:
+  repo: ilessio-aiflowlab/project_calib_projfusion
+  formats:
+    - pth
+    - safetensors
+    - onnx
+    - trt_fp16
+    - trt_fp32
+
 entrypoints:
-  train: "scripts/train.py"
+  train_kitti: "anima_calib_projfusion.train"
+  train_nuscenes: "anima_calib_projfusion.train_nuscenes"
   package: "anima_calib_projfusion"
+
 runtime:
   backend: auto
   cuda_ready: true
+  min_vram_gb: 4

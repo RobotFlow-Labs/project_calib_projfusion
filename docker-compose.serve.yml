@@ -1,0 +1,66 @@
+x-common: &common
+  network_mode: host
+  environment:
+    - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+    - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    - ANIMA_MODULE_NAME=calib-projfusion
+    - ANIMA_HF_REPO=${HF_REPO:-ilessio-aiflowlab/project_calib_projfusion}
+    - ANIMA_WEIGHT_FORMAT=${WEIGHT_FORMAT:-auto}
+    - ANIMA_DEVICE=${DEVICE:-auto}
+    - HF_TOKEN=${HF_TOKEN:-}
+  volumes:
+    - anima-weights:/data/weights
+  restart: unless-stopped
+
+services:
+  serve:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    <<: *common
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    profiles: [serve, gpu]
+
+  ros2:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    <<: *common
+    command: ["anima-serve", "start", "--ros2-only"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    profiles: [ros2]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    <<: *common
+    command: ["anima-serve", "start", "--api-only"]
+    profiles: [api]
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    <<: *common
+    command: >
+      bash -c "
+        pip3 install --break-system-packages pytest 2>/dev/null;
+        python3 -m pytest tests/ -v --tb=short
+      "
+    profiles: [test]
+
+volumes:
+  anima-weights:
