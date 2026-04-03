@@ -1,0 +1,11 @@
+services:
+  calib-projfusion:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      ANIMA_BACKEND: ${ANIMA_BACKEND:-cpu}
+    volumes:
+      - /Volumes/AIFlowDev/RobotFlowLabs/datasets:/data:ro

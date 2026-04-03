@@ -1,19 +1,55 @@
 [project]
-name = "anima-ebisu"
-codename = "EBISU"
-functional_name = "CALIB-projfusion"
+name = "anima-calib-projfusion"
+codename = "CALIB-PROJFUSION"
+functional_name = "CALIB-PROJFUSION"
 wave = 7
+python_version = "3.11"
 paper_arxiv = "2603.29414"
+paper_title = "Native-Domain Cross-Attention for Camera-LiDAR Extrinsic Calibration Under Large Initial Perturbations"
 
-[compute]
-backend = "auto"  # "mlx", "cuda", "auto"
+[runtime]
+backend = "auto"
+device = "auto"
 precision = "fp32"
+torch_variant = "cpu"
+
+[model]
+image_hw = [224, 448]
+patch_size = 14
+feature_dim = 384
+feature_hw = [16, 32]
+point_count = 8192
+num_groups = 128
+group_size = 64
+harmonic_functions = 6
+projection_margin = 2.0
+attention_heads = 6
+attention_dim_head = 64
+aggregation_planes = 96
+mlp_hidden_dims = [128, 128]
+iterative_refinement_steps = 3
+
+[training]
+optimizer = "adamw"
+lr = 5e-4
+weight_decay = 1e-2
+scheduler = "cosine-warmup"
+epochs = 30
+warmup_steps = 2
 
 [data]
-shared_volume = "/Volumes/AIFlowDev/RobotFlowLabs/datasets"
-repos_volume = "/Volumes/AIFlowDev/RobotFlowLabs/repos/wave7"
+dataset_root = "/Volumes/AIFlowDev/RobotFlowLabs/datasets/datasets"
+artifact_root = "/Volumes/AIFlowDev/RobotFlowLabs/datasets/artifacts"
+model_root = "/Volumes/AIFlowDev/RobotFlowLabs/datasets/models"
+kitti_root = "/mnt/forge-data/datasets/kitti_odometry"
+nuscenes_root = "/mnt/forge-data/datasets/nuscenes"
+
+[pretrained]
+dinov2 = "/mnt/forge-data/models/vision/dinov2_vits14"
+pointgpt_kitti = "/mnt/forge-data/models/pointgpt/kitti_pointgpt_tiny.pth"
+pointgpt_nuscenes = "/mnt/forge-data/models/pointgpt/nuscenes_pointgpt_tiny.ckpt"
 
 [hardware]
 zed2i = true
 unitree_l2_lidar = true
-cobot_xarm6 = false  # Set true when purchased
+cobot_xarm6 = false

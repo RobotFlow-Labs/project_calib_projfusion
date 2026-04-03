@@ -3,20 +3,53 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "anima-ebisu"
+name = "anima-calib-projfusion"
 version = "0.1.0"
-description = "ANIMA EBISU — ProjFusion: Camera-LiDAR Calibration (RA-L 2026)"
-requires-python = ">=3.10"
+description = "ANIMA CALIB-PROJFUSION — paper-faithful ProjFusion camera-LiDAR calibration"
+requires-python = ">=3.11"
 dependencies = [
-    "torch>=2.0",
-    "numpy",
-    "opencv-python",
+    "accelerate>=1.0",
+    "einops>=0.8",
+    "fastapi>=0.115",
+    "numpy>=1.26",
+    "opencv-python>=4.10",
+    "pandas>=2.2",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.3",
+    "python-multipart>=0.0.9",
+    "tabulate>=0.9",
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "timm>=1.0",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]
-mlx = ["mlx>=0.10", "mlx-nn"]
-dev = ["pytest", "ruff", "mypy"]
+cuda = [
+    "triton>=3.0; platform_system == 'Linux'",
+    "xformers>=0.0.28.post3; platform_system == 'Linux'",
+]
+data = [
+    "nuscenes-devkit>=1.1",
+    "open3d>=0.18",
+    "pykitti>=0.3",
+]
+mlx = ["mlx>=0.10; platform_system == 'Darwin'"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.11",
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "ruff>=0.5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anima_calib_projfusion"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

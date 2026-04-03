@@ -1,58 +1,64 @@
-# EBISU — Execution Ledger
+# CALIB-PROJFUSION — Execution Ledger
 
-Resume rule: Read this file COMPLETELY before writing any code.
-This project covers exactly ONE paper: ProjFusion: Camera-LiDAR Calibration (RA-L 2026).
+Resume rule: Read this file completely before writing code.
+This project covers exactly one paper: ProjFusion / Native-Domain Cross-Attention for Camera-LiDAR Extrinsic Calibration Under Large Initial Perturbations.
 
 ## 1. Working Rules
-- Work only inside `project_ebisu/`
-- This wave has 17 parallel projects, 17 papers, 17 agents
-- Prefix every commit with `[EBISU]`
-- Stage only `project_ebisu/` files
-- VERIFY THE PAPER BEFORE BUILDING ANYTHING
+- Work only inside `project_calib_projfusion/`
+- Prefix every commit with `[CALIB-PROJFUSION]`
+- Use `uv` for environment and dependency operations
+- Target Python `3.11`
+- Keep macOS development paths working while preserving CUDA-ready Linux paths for later training
 
-## 2. The Paper
-- **Title**: ProjFusion: Camera-LiDAR Calibration (RA-L 2026)
-- **ArXiv**: 2603.29414
-- **Link**: https://arxiv.org/abs/2603.29414
-- **Repo**: https://github.com/gitouni/ProjFusion
-- **Compute**: GPU-NEED
-- **Verification status**: ArXiv ID ✅ | Repo ✅ | Paper read ⬜
-
-## 3. Current Status
+## 2. Current Status
 - **Date**: 2026-04-03
-- **Phase**: Scaffold (just created)
-- **MVP Readiness**: 5%
-- **Accomplished**: Project scaffolded with standard structure
-- **TODO**:
-  1. Download paper PDF
-  2. Clone reference repo to /Volumes/AIFlowDev/RobotFlowLabs/repos/wave7
-  3. Read paper thoroughly
-  4. Fill in CLAUDE.md core method / what we take / skip / adapt
-  5. Fill in PRD.md sections 1, 3-6, 8-11
-  6. Run reference demo/inference
-  7. Begin Phase 1 verification
-- **Blockers**: None
+- **Phase**: Structural build complete, data/checkpoint integration pending
+- **MVP Readiness**: 75%
+- **Completed PRDs**: PRD-01, PRD-02, PRD-03, PRD-04, PRD-05, PRD-06, PRD-07
+- **Pending PRDs**: none at scaffold level
+- **Validated locally**:
+  - `uv sync --python 3.11`
+  - `uv run ruff check src tests scripts`
+  - targeted pytest suite for config, geometry, projection, data, encoders, forward pass, inference, evaluation, API, and ROS bridge
+- **Main blocker**: no real datasets or pretrained checkpoints are staged on the local/shared volume yet
 
-## 4. Datasets
-### Required for this paper
-| Dataset | Size | URL | Format | Phase Needed |
-|---------|------|-----|--------|-------------|
-| (TODO after reading paper) | — | — | — | Phase 1 |
+## 3. What Exists Now
+- Correct package namespace: `src/anima_calib_projfusion/`
+- Typed TOML/Pydantic settings with paper/repo defaults
+- SE(3), projection, split metadata, perturbation sampling
+- Paper-aligned model scaffold:
+  - DINOv2-style image token wrapper
+  - PointGPT-style grouped point encoder
+  - harmonic positional encoding
+  - dual cross-attention branches
+  - dual aggregation + regression heads
+- Three-step iterative inference pipeline
+- Checkpoint key translation adapter
+- Evaluation metrics, benchmark runner, markdown/csv report builders
+- FastAPI service + Docker runtime scaffold
+- Host-safe ROS2 bridge/node/launch scaffold
+- CUDA helper: `scripts/sync_cuda.sh`
 
-### Check shared volume first
-/Volumes/AIFlowDev/RobotFlowLabs/datasets
+## 4. Immediate Next Steps
+1. Materialize datasets at the configured roots:
+   - KITTI: `/mnt/forge-data/datasets/kitti_odometry`
+   - nuScenes: `/mnt/forge-data/datasets/nuscenes`
+2. Materialize pretrained checkpoints:
+   - DINOv2 tiny
+   - PointGPT tiny (KITTI / nuScenes)
+3. Replace local stub encoder implementations with real checkpoint-backed wrappers.
+4. Add readiness logic that reports false when required checkpoints are absent.
+5. Run real export/validation flow once benchmarked checkpoints exist.
 
-### Download
-`bash scripts/download_data.sh`
-
-## 5. Hardware
-- ZED 2i stereo camera: Available
-- Unitree L2 3D LiDAR: Available
-- xArm 6 cobot: Pending purchase
-- Mac Studio M-series: MLX dev
-- 8x RTX 6000 Pro Blackwell: GCloud
+## 5. Environment Notes
+- macOS local build works with base `torch` and the current smoke-test stack
+- Linux/CUDA path is prepared via:
+  - optional dependency group `cuda`
+  - `scripts/sync_cuda.sh`
+- Full GPU training has not started
 
 ## 6. Session Log
 | Date | Agent | What Happened |
 |------|-------|---------------|
-| 2026-04-03 | ANIMA Research Agent | Project scaffolded |
+| 2026-04-03 | ANIMA Research Agent | PRD suite and task bundle created from paper + reference repo |
+| 2026-04-03 | Codex | Replaced stale scaffold, implemented PRD-01 through PRD-07, validated full local test suite, left real data/checkpoint integration as the primary blocker |

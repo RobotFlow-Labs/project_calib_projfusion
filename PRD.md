@@ -1,7 +1,7 @@
 # CALIB-PROJFUSION: ProjFusion — Implementation PRD
 ## ANIMA Wave-7 Calibration Module
 
-**Status:** Planning complete, implementation not started  
+**Status:** Active implementation through PRD-06 scaffold  
 **Version:** 0.2  
 **Date:** 2026-04-03  
 **Paper:** Native-Domain Cross-Attention for Camera-LiDAR Extrinsic Calibration Under Large Initial Perturbations  
@@ -89,13 +89,13 @@ CALIB-PROJFUSION will reproduce the released ProjFusion calibration pipeline as 
 ## 10. Build Plan
 | PRD# | Task | Status |
 |------|------|--------|
-| [PRD-01](prds/PRD-01-foundation.md) | Foundation, package rename, configs, geometry, datasets | ⬜ |
-| [PRD-02](prds/PRD-02-core-model.md) | Core ProjFusion model, encoders, cross-attention, dual heads | ⬜ |
-| [PRD-03](prds/PRD-03-inference.md) | Checkpoint loading, three-step iterative inference, CLI, visualization | ⬜ |
-| [PRD-04](prds/PRD-04-evaluation.md) | Metrics, benchmark runners, Table I/II style evaluation | ⬜ |
-| [PRD-05](prds/PRD-05-api-docker.md) | FastAPI serving, Docker image, health checks | ⬜ |
-| [PRD-06](prds/PRD-06-ros2-integration.md) | ROS2 node, topic bridge, launch configuration | ⬜ |
-| [PRD-07](prds/PRD-07-production.md) | Production hardening, export, ops validation, release packaging | ⬜ |
+| [PRD-01](prds/PRD-01-foundation.md) | Foundation, package rename, configs, geometry, datasets | ✅ |
+| [PRD-02](prds/PRD-02-core-model.md) | Core ProjFusion model, encoders, cross-attention, dual heads | ✅ |
+| [PRD-03](prds/PRD-03-inference.md) | Checkpoint loading, three-step iterative inference, CLI, visualization | ✅ |
+| [PRD-04](prds/PRD-04-evaluation.md) | Metrics, benchmark runners, Table I/II style evaluation | ✅ |
+| [PRD-05](prds/PRD-05-api-docker.md) | FastAPI serving, Docker image, health checks | ✅ |
+| [PRD-06](prds/PRD-06-ros2-integration.md) | ROS2 node, topic bridge, launch configuration | ✅ |
+| [PRD-07](prds/PRD-07-production.md) | Production hardening, export, ops validation, release packaging | ✅ |
 
 ## 11. Supporting Artifacts
 - Asset manifest: `ASSETS.md`
@@ -104,8 +104,7 @@ CALIB-PROJFUSION will reproduce the released ProjFusion calibration pipeline as 
 - Build tasks: `tasks/`
 
 ## 12. Immediate Next Implementation Order
-1. Fix package identity and config scaffolding.
-2. Port the released dataset / perturbation / SE(3) utilities.
-3. Rebuild the dual-branch ProjFusion core model.
-4. Add three-step inference and checkpoint loading.
-5. Add evaluation parity against paper metrics before any downstream integration work.
+1. Materialize real datasets and pretrained checkpoints on the shared volume.
+2. Replace stub encoder wrappers with released-backbone checkpoint loading.
+3. Wire checkpoint-aware readiness into API and ROS runtime.
+4. Run real benchmark reproduction against KITTI and nuScenes.

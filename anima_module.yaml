@@ -1,0 +1,15 @@
+name: calib-projfusion
+codename: CALIB-PROJFUSION
+wave: 7
+domain: calibration
+package: anima_calib_projfusion
+python: "3.11"
+paper:
+  arxiv: "2603.29414"
+  title: "Native-Domain Cross-Attention for Camera-LiDAR Extrinsic Calibration Under Large Initial Perturbations"
+entrypoints:
+  train: "scripts/train.py"
+  package: "anima_calib_projfusion"
+runtime:
+  backend: auto
+  cuda_ready: true
