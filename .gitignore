@@ -12,3 +12,4 @@ wandb/
 outputs/
 data/
 *.log
+__pycache__/
