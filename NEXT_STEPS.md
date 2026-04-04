@@ -58,12 +58,13 @@ This project covers exactly one paper: ProjFusion / Native-Domain Cross-Attentio
 
 ## 8. TODO
 - [x] Push to HuggingFace: https://huggingface.co/ilessio-aiflowlab/project_calib_projfusion
-- [x] nuScenes data loader + training (24k samples, GPU 5, in progress)
+- [x] nuScenes data loader + training (24k samples, val_loss=0.0151)
 - [x] Dockerfile.serve + docker-compose.serve.yml + serve.py
 - [x] anima_module.yaml full manifest
 - [x] serve.py CalibProjFusionNode with 3-step iterative refinement
+- [x] nuScenes export (pth+safetensors+ONNX+TRT FP16+TRT FP32)
+- [x] HF push: complete package, 30 files, KITTI+nuScenes, both variants
 - [ ] Registry entry in anima-infra-main
-- [ ] nuScenes export + HF push (after training completes)
 - [ ] Full paper metrics evaluation (Table I/II style)
 
 ## 9. Blocking
