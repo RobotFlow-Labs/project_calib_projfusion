@@ -3,6 +3,7 @@
 Loads the real DINOv2-small backbone via timm and extracts patch tokens
 matching the paper's [B, 512, 384] output for 224×448 inputs.
 """
+
 from __future__ import annotations
 
 import logging
@@ -44,7 +45,10 @@ class DINOv2ImageEncoder(nn.Module):
         if pretrained and wp.exists():
             # Load from local timm-format checkpoint
             self.backbone = timm.create_model(
-                _DINOV2_SMALL_TIMM, pretrained=False, img_size=image_hw, num_classes=0,
+                _DINOV2_SMALL_TIMM,
+                pretrained=False,
+                img_size=image_hw,
+                num_classes=0,
             )
             state = torch.load(str(wp), map_location="cpu", weights_only=True)
             self.backbone.load_state_dict(state, strict=False)
@@ -52,12 +56,18 @@ class DINOv2ImageEncoder(nn.Module):
         elif pretrained:
             # Download from timm hub
             self.backbone = timm.create_model(
-                _DINOV2_SMALL_TIMM, pretrained=True, img_size=image_hw, num_classes=0,
+                _DINOV2_SMALL_TIMM,
+                pretrained=True,
+                img_size=image_hw,
+                num_classes=0,
             )
             logger.info("Loaded DINOv2-small from timm hub")
         else:
             self.backbone = timm.create_model(
-                _DINOV2_SMALL_TIMM, pretrained=False, img_size=image_hw, num_classes=0,
+                _DINOV2_SMALL_TIMM,
+                pretrained=False,
+                img_size=image_hw,
+                num_classes=0,
             )
 
         if freeze:

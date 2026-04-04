@@ -6,6 +6,7 @@ FastAPI (REST) and optionally ROS2 topics.
 Inference: accepts RGB image + point cloud + initial extrinsic guess,
 returns corrected extrinsic via three-step iterative refinement.
 """
+
 from __future__ import annotations
 
 import logging
@@ -56,11 +57,13 @@ class CalibProjFusionNode:
         else:
             logger.warning("No weights loaded — using random init for trainable params")
 
-        self.img_transform = T.Compose([
-            T.Resize((224, 448)),
-            T.ToTensor(),
-            T.Normalize(IMAGENET_MEAN, IMAGENET_STD),
-        ])
+        self.img_transform = T.Compose(
+            [
+                T.Resize((224, 448)),
+                T.ToTensor(),
+                T.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+            ]
+        )
 
         self._ready = True
         logger.info("CalibProjFusion node ready on %s", self.device)
@@ -112,7 +115,9 @@ class CalibProjFusionNode:
         ci_gpu = {}
         for k, v in ci.items():
             if isinstance(v, (int, float)):
-                ci_gpu[k] = torch.tensor([v], device=self.device) if k in ("fx", "fy", "cx", "cy") else v
+                ci_gpu[k] = (
+                    torch.tensor([v], device=self.device) if k in ("fx", "fy", "cx", "cy") else v
+                )
             elif isinstance(v, torch.Tensor):
                 ci_gpu[k] = v.to(self.device)
             else:

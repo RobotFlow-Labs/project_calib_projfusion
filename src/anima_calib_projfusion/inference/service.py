@@ -12,7 +12,9 @@ from anima_calib_projfusion.model.projfusion import ProjDualFusion
 
 
 class CalibrationService:
-    def __init__(self, model: ProjDualFusion | None = None, settings: ProjFusionSettings | None = None) -> None:
+    def __init__(
+        self, model: ProjDualFusion | None = None, settings: ProjFusionSettings | None = None
+    ) -> None:
         self.settings = settings or ProjFusionSettings.from_toml("configs/default.toml")
         self.model = model or ProjDualFusion(
             image_hw=self.settings.model.image_hw,
@@ -29,7 +31,9 @@ class CalibrationService:
     def is_ready(self) -> bool:
         return self.model is not None
 
-    def calibrate(self, request: CalibrationRequest, debug_overlay: bool = False) -> CalibrationResponse:
+    def calibrate(
+        self, request: CalibrationRequest, debug_overlay: bool = False
+    ) -> CalibrationResponse:
         image = torch.tensor(request.image, dtype=torch.float32).unsqueeze(0)
         if image.ndim != 4:
             raise ValueError("Expected image shaped [C,H,W]")
@@ -42,7 +46,9 @@ class CalibrationService:
             init_extrinsic=init_extrinsic,
             camera_info=camera,
         )
-        pred_extrinsic, trajectory = iterative_calibrate(self.model, batch, run_iter=request.run_iter)
+        pred_extrinsic, trajectory = iterative_calibrate(
+            self.model, batch, run_iter=request.run_iter
+        )
         overlay_shape = None
         if debug_overlay:
             overlay = render_projection_overlay(

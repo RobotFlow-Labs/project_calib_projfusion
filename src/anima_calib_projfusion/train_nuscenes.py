@@ -5,27 +5,26 @@ Differences from KITTI training:
 - Larger dataset → more steps per epoch
 - Same model, optimizer, scheduler, loss
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import logging
-import math
 import time
 from pathlib import Path
 
 import torch
 import torch.nn as nn
-from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
 from anima_calib_projfusion.data.kitti import collate_calib
-from anima_calib_projfusion.data.nuscenes import NuScenesCalibDataset, make_nuscenes_splits
-from anima_calib_projfusion.geometry.se3 import se3_exp, se3_log, se3_inv
+from anima_calib_projfusion.data.nuscenes import make_nuscenes_splits
+from anima_calib_projfusion.geometry.se3 import se3_exp, se3_log
 from anima_calib_projfusion.model.projfusion import ProjDualFusion
 from anima_calib_projfusion.train import (
-    WarmupCosineScheduler,
     CheckpointManager,
+    WarmupCosineScheduler,
     calibration_loss,
     se3_error,
 )
@@ -61,16 +60,25 @@ def train(
     # ─── Data ──────────────────────────────────────
     logger.info("Loading nuScenes dataset...")
     train_ds, val_ds, _ = make_nuscenes_splits(
-        max_deg=max_deg, max_tran=max_tran, pcd_sample_num=8192,
+        max_deg=max_deg,
+        max_tran=max_tran,
+        pcd_sample_num=8192,
     )
     train_loader = DataLoader(
-        train_ds, batch_size=batch_size, shuffle=True,
-        collate_fn=collate_calib, num_workers=num_workers,
-        pin_memory=True, drop_last=True,
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collate_calib,
+        num_workers=num_workers,
+        pin_memory=True,
+        drop_last=True,
     )
     val_loader = DataLoader(
-        val_ds, batch_size=batch_size, shuffle=False,
-        collate_fn=collate_calib, num_workers=num_workers,
+        val_ds,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_calib,
+        num_workers=num_workers,
         pin_memory=True,
     )
 
@@ -78,12 +86,13 @@ def train(
     model = ProjDualFusion(dinov2_pretrained=True, freeze_encoders=True).to(device)
     n_total = sum(p.numel() for p in model.parameters())
     n_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info(f"[MODEL] {n_total/1e6:.1f}M params, {n_train/1e6:.1f}M trainable")
+    logger.info(f"[MODEL] {n_total / 1e6:.1f}M params, {n_train / 1e6:.1f}M trainable")
 
     # ─── Optimizer ─────────────────────────────────
     optimizer = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
-        lr=lr, weight_decay=weight_decay,
+        lr=lr,
+        weight_decay=weight_decay,
     )
     total_steps = epochs * len(train_loader)
     warmup_steps = warmup_epochs * len(train_loader)
@@ -156,7 +165,7 @@ def train(
             if (i + 1) % 50 == 0:
                 lr_now = optimizer.param_groups[0]["lr"]
                 logger.info(
-                    f"[Epoch {epoch+1}/{epochs}] Step {i+1}/{len(train_loader)} "
+                    f"[Epoch {epoch + 1}/{epochs}] Step {i + 1}/{len(train_loader)} "
                     f"loss={loss.item():.4f} lr={lr_now:.2e}"
                 )
 
@@ -197,21 +206,24 @@ def train(
         val_tsl_err /= max(n_val, 1)
 
         logger.info(
-            f"[Epoch {epoch+1}/{epochs}] train_loss={train_loss:.4f} "
+            f"[Epoch {epoch + 1}/{epochs}] train_loss={train_loss:.4f} "
             f"val_loss={val_loss:.4f} rot_err={val_rot_err:.2f}° "
             f"tsl_err={val_tsl_err:.4f}m time={dt:.1f}s"
         )
 
         with open(metrics_file, "a") as f:
-            json.dump({
-                "epoch": epoch + 1,
-                "train_loss": train_loss,
-                "val_loss": val_loss,
-                "val_rot_err_deg": val_rot_err,
-                "val_tsl_err_m": val_tsl_err,
-                "lr": optimizer.param_groups[0]["lr"],
-                "time_s": dt,
-            }, f)
+            json.dump(
+                {
+                    "epoch": epoch + 1,
+                    "train_loss": train_loss,
+                    "val_loss": val_loss,
+                    "val_rot_err_deg": val_rot_err,
+                    "val_tsl_err_m": val_tsl_err,
+                    "lr": optimizer.param_groups[0]["lr"],
+                    "time_s": dt,
+                },
+                f,
+            )
             f.write("\n")
 
         state = {

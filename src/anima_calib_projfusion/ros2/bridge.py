@@ -52,7 +52,9 @@ def ros_to_batch(
     if init_extrinsic_msg is None:
         init_extrinsic = torch.eye(4, dtype=torch.float32).unsqueeze(0)
     else:
-        init_extrinsic = torch.tensor(_value_from_message(init_extrinsic_msg, "matrix"), dtype=torch.float32).unsqueeze(0)
+        init_extrinsic = torch.tensor(
+            _value_from_message(init_extrinsic_msg, "matrix"), dtype=torch.float32
+        ).unsqueeze(0)
     return CalibrationBatch(
         image=image,
         point_cloud=point_cloud,

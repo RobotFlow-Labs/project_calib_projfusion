@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class ScaleFreeCrossAttention(nn.Module):
-    def __init__(self, embed_dim: int = 384, num_heads: int = 6, pos_dim: int | None = None) -> None:
+    def __init__(
+        self, embed_dim: int = 384, num_heads: int = 6, pos_dim: int | None = None
+    ) -> None:
         super().__init__()
         if embed_dim % num_heads != 0:
             raise ValueError("embed_dim must be divisible by num_heads")
@@ -48,6 +50,8 @@ class ScaleFreeCrossAttention(nn.Module):
         value = self._reshape_heads(value)
         attention = torch.softmax(query @ key.transpose(-1, -2), dim=-1)
         fused = attention @ value
-        fused = fused.transpose(1, 2).reshape(image_tokens.shape[0], image_tokens.shape[1], self.embed_dim)
+        fused = fused.transpose(1, 2).reshape(
+            image_tokens.shape[0], image_tokens.shape[1], self.embed_dim
+        )
         fused = self.norm_1(image_tokens + self.out_proj(fused))
         return self.norm_2(fused + self.ff(fused))

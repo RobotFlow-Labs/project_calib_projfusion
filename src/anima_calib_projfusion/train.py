@@ -3,13 +3,13 @@
 Config-driven, torch.compile, AMP mixed precision, cosine-warmup LR,
 early stopping, checkpointing to /mnt/artifacts-datai/.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import logging
 import math
-import os
 import time
 from pathlib import Path
 
@@ -19,11 +19,10 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
 from anima_calib_projfusion.data.kitti import (
-    KITTICalibDataset,
     collate_calib,
     make_kitti_splits,
 )
-from anima_calib_projfusion.geometry.se3 import se3_exp, se3_log, se3_inv
+from anima_calib_projfusion.geometry.se3 import se3_exp, se3_inv, se3_log
 from anima_calib_projfusion.model.projfusion import ProjDualFusion
 
 logging.basicConfig(
@@ -41,6 +40,7 @@ LOG_DIR = ARTIFACTS / "logs" / PROJECT
 
 
 # ─── Loss ─────────────────────────────────────────────────────
+
 
 def calibration_loss(
     rot_log: torch.Tensor,
@@ -66,6 +66,7 @@ def se3_error(pred_T: torch.Tensor, gt_T: torch.Tensor):
 
 
 # ─── LR Scheduler ────────────────────────────────────────────
+
 
 class WarmupCosineScheduler:
     def __init__(self, optimizer, warmup_steps, total_steps, min_lr=1e-7):
@@ -97,6 +98,7 @@ class WarmupCosineScheduler:
 
 # ─── Checkpoint Manager ──────────────────────────────────────
 
+
 class CheckpointManager:
     def __init__(self, save_dir: Path, keep_top_k: int = 2, mode: str = "min"):
         self.save_dir = save_dir
@@ -118,10 +120,12 @@ class CheckpointManager:
         best_dst = self.save_dir / "best.pth"
         if best_path != best_dst:
             import shutil
+
             shutil.copy2(best_path, best_dst)
 
 
 # ─── Training ─────────────────────────────────────────────────
+
 
 def train(
     epochs: int = 30,
@@ -142,16 +146,25 @@ def train(
     # ─── Data ──────────────────────────────────────
     logger.info("Loading KITTI dataset...")
     train_ds, val_ds, _ = make_kitti_splits(
-        max_deg=max_deg, max_tran=max_tran, pcd_sample_num=8192,
+        max_deg=max_deg,
+        max_tran=max_tran,
+        pcd_sample_num=8192,
     )
     train_loader = DataLoader(
-        train_ds, batch_size=batch_size, shuffle=True,
-        collate_fn=collate_calib, num_workers=num_workers,
-        pin_memory=True, drop_last=True,
+        train_ds,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collate_calib,
+        num_workers=num_workers,
+        pin_memory=True,
+        drop_last=True,
     )
     val_loader = DataLoader(
-        val_ds, batch_size=batch_size, shuffle=False,
-        collate_fn=collate_calib, num_workers=num_workers,
+        val_ds,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_calib,
+        num_workers=num_workers,
         pin_memory=True,
     )
 
@@ -159,7 +172,7 @@ def train(
     model = ProjDualFusion(dinov2_pretrained=True, freeze_encoders=True).to(device)
     n_total = sum(p.numel() for p in model.parameters())
     n_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info(f"[MODEL] {n_total/1e6:.1f}M params, {n_train/1e6:.1f}M trainable")
+    logger.info(f"[MODEL] {n_total / 1e6:.1f}M params, {n_train / 1e6:.1f}M trainable")
 
     if compile_model:
         logger.info("[COMPILE] torch.compile on calibration head...")
@@ -169,7 +182,8 @@ def train(
     # ─── Optimizer ─────────────────────────────────
     optimizer = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
-        lr=lr, weight_decay=weight_decay,
+        lr=lr,
+        weight_decay=weight_decay,
     )
     total_steps = epochs * len(train_loader)
     warmup_steps = warmup_epochs * len(train_loader)
@@ -179,7 +193,6 @@ def train(
     # ─── Checkpointing ─────────────────────────────
     ckpt_mgr = CheckpointManager(CHECKPOINT_DIR, keep_top_k=2)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_file = LOG_DIR / f"train_{time.strftime('%Y%m%d_%H%M')}.log"
     metrics_file = LOG_DIR / "metrics.jsonl"
 
     start_epoch = 0
@@ -248,7 +261,7 @@ def train(
             if (i + 1) % 50 == 0:
                 lr_now = optimizer.param_groups[0]["lr"]
                 logger.info(
-                    f"[Epoch {epoch+1}/{epochs}] Step {i+1}/{len(train_loader)} "
+                    f"[Epoch {epoch + 1}/{epochs}] Step {i + 1}/{len(train_loader)} "
                     f"loss={loss.item():.4f} lr={lr_now:.2e}"
                 )
 
@@ -290,22 +303,25 @@ def train(
         val_tsl_err /= max(n_val, 1)
 
         logger.info(
-            f"[Epoch {epoch+1}/{epochs}] train_loss={train_loss:.4f} "
+            f"[Epoch {epoch + 1}/{epochs}] train_loss={train_loss:.4f} "
             f"val_loss={val_loss:.4f} rot_err={val_rot_err:.2f}° "
             f"tsl_err={val_tsl_err:.4f}m time={dt:.1f}s"
         )
 
         # Log metrics
         with open(metrics_file, "a") as f:
-            json.dump({
-                "epoch": epoch + 1,
-                "train_loss": train_loss,
-                "val_loss": val_loss,
-                "val_rot_err_deg": val_rot_err,
-                "val_tsl_err_m": val_tsl_err,
-                "lr": optimizer.param_groups[0]["lr"],
-                "time_s": dt,
-            }, f)
+            json.dump(
+                {
+                    "epoch": epoch + 1,
+                    "train_loss": train_loss,
+                    "val_loss": val_loss,
+                    "val_rot_err_deg": val_rot_err,
+                    "val_tsl_err_m": val_tsl_err,
+                    "lr": optimizer.param_groups[0]["lr"],
+                    "time_s": dt,
+                },
+                f,
+            )
             f.write("\n")
 
         # ─── Checkpoint ───────────────────────────

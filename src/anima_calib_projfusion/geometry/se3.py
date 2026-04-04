@@ -5,13 +5,14 @@ All operations are differentiable and batched.
 
 Convention: twist ξ = [rot_x, rot_y, rot_z, tx, ty, tz] ∈ R^6.
 """
+
 from __future__ import annotations
 
 import torch
-from torch import sin, cos
-
+from torch import cos, sin
 
 # ─── sinc helpers (Taylor-safe near zero) ────────────────────────
+
 
 def _sinc1(t: torch.Tensor) -> torch.Tensor:
     """sin(t)/t, Taylor-safe."""
@@ -29,7 +30,7 @@ def _sinc2(t: torch.Tensor) -> torch.Tensor:
     r = torch.zeros_like(t)
     a = torch.abs(t)
     s, c = a < 0.01, a >= 0.01
-    t2 = t ** 2
+    t2 = t**2
     r[s] = 0.5 * (1 - t2[s] / 12 * (1 - t2[s] / 30 * (1 - t2[s] / 56)))
     r[c] = (1 - cos(t[c])) / t2[c]
     return r
@@ -48,16 +49,20 @@ def _sinc3(t: torch.Tensor) -> torch.Tensor:
 
 # ─── SO(3) operations ─────────────────────────────────────────
 
+
 def _skew(w: torch.Tensor) -> torch.Tensor:
     """Skew-symmetric matrix: [*, 3] -> [*, 3, 3]."""
     w_ = w.view(-1, 3)
     x1, x2, x3 = w_[:, 0], w_[:, 1], w_[:, 2]
-    O = torch.zeros_like(x1)
-    X = torch.stack([
-        torch.stack([O, -x3, x2], dim=1),
-        torch.stack([x3, O, -x1], dim=1),
-        torch.stack([-x2, x1, O], dim=1),
-    ], dim=1)
+    zero = torch.zeros_like(x1)
+    X = torch.stack(
+        [
+            torch.stack([zero, -x3, x2], dim=1),
+            torch.stack([x3, zero, -x1], dim=1),
+            torch.stack([-x2, x1, zero], dim=1),
+        ],
+        dim=1,
+    )
     return X.view(*w.shape[:-1], 3, 3)
 
 
@@ -67,8 +72,8 @@ def so3_exp(w: torch.Tensor) -> torch.Tensor:
     t = w_.norm(p=2, dim=1).view(-1, 1, 1)
     W = _skew(w_)
     S = W.bmm(W)
-    I = torch.eye(3, device=w.device, dtype=w.dtype)
-    R = I + _sinc1(t) * W + _sinc2(t) * S
+    eye3 = torch.eye(3, device=w.device, dtype=w.dtype)
+    R = eye3 + _sinc1(t) * W + _sinc2(t) * S
     return R.view(*w.shape[:-1], 3, 3)
 
 
@@ -78,11 +83,14 @@ def so3_log(R: torch.Tensor) -> torch.Tensor:
     tr = R_[:, 0, 0] + R_[:, 1, 1] + R_[:, 2, 2]
     cos_angle = ((tr - 1) / 2).clamp(-1 + 1e-7, 1 - 1e-7)
     angle = torch.acos(cos_angle)
-    w = torch.stack([
-        R_[:, 2, 1] - R_[:, 1, 2],
-        R_[:, 0, 2] - R_[:, 2, 0],
-        R_[:, 1, 0] - R_[:, 0, 1],
-    ], dim=1)
+    w = torch.stack(
+        [
+            R_[:, 2, 1] - R_[:, 1, 2],
+            R_[:, 0, 2] - R_[:, 2, 0],
+            R_[:, 1, 0] - R_[:, 0, 1],
+        ],
+        dim=1,
+    )
     s = angle.unsqueeze(-1)
     scale = torch.where(s.abs() < 1e-7, torch.ones_like(s) * 0.5, s / (2 * torch.sin(s)))
     return (w * scale).view(*R.shape[:-2], 3)
@@ -93,8 +101,8 @@ def _so3_inv_V(w: torch.Tensor) -> torch.Tensor:
     w_ = w.view(-1, 3)
     t = w_.norm(p=2, dim=1).view(-1, 1, 1)
     W = _skew(w_)
-    I = torch.eye(3, device=w.device, dtype=w.dtype)
-    t2 = t ** 2
+    eye3 = torch.eye(3, device=w.device, dtype=w.dtype)
+    t2 = t**2
     coeff = torch.zeros_like(t)
     small = t.squeeze() < 0.01
     big = ~small
@@ -102,10 +110,11 @@ def _so3_inv_V(w: torch.Tensor) -> torch.Tensor:
         coeff[small] = 1.0 / 12 * (1 + t2[small] / 60 * (1 + t2[small] / 42))
     if big.any():
         coeff[big] = (1 - t[big] * cos(t[big] / 2) / (2 * sin(t[big] / 2))) / t2[big]
-    return I - 0.5 * W + coeff * W.bmm(W)
+    return eye3 - 0.5 * W + coeff * W.bmm(W)
 
 
 # ─── SE(3) operations ─────────────────────────────────────────
+
 
 def se3_exp(xi: torch.Tensor) -> torch.Tensor:
     """Exponential map se(3) → SE(3): [*, 6] -> [*, 4, 4]."""
@@ -114,11 +123,15 @@ def se3_exp(xi: torch.Tensor) -> torch.Tensor:
     t = w.norm(p=2, dim=1).view(-1, 1, 1)
     W = _skew(w)
     S = W.bmm(W)
-    I = torch.eye(3, device=xi.device, dtype=xi.dtype)
-    R = I + _sinc1(t) * W + _sinc2(t) * S
-    V = I + _sinc2(t) * W + _sinc3(t) * S
+    eye3 = torch.eye(3, device=xi.device, dtype=xi.dtype)
+    R = eye3 + _sinc1(t) * W + _sinc2(t) * S
+    V = eye3 + _sinc2(t) * W + _sinc3(t) * S
     p = V.bmm(v.view(-1, 3, 1))
-    z = torch.tensor([0, 0, 0, 1], device=xi.device, dtype=xi.dtype).view(1, 1, 4).expand(xi_.size(0), -1, -1)
+    z = (
+        torch.tensor([0, 0, 0, 1], device=xi.device, dtype=xi.dtype)
+        .view(1, 1, 4)
+        .expand(xi_.size(0), -1, -1)
+    )
     g = torch.cat([torch.cat([R, p], dim=2), z], dim=1)
     return g.view(*xi.shape[:-1], 4, 4)
 
@@ -139,7 +152,11 @@ def se3_inv(g: torch.Tensor) -> torch.Tensor:
     R, p = g_[:, :3, :3], g_[:, :3, 3]
     Q = R.transpose(1, 2)
     q = -Q.matmul(p.unsqueeze(-1))
-    z = torch.tensor([0, 0, 0, 1], device=g.device, dtype=g.dtype).view(1, 1, 4).expand(g_.size(0), -1, -1)
+    z = (
+        torch.tensor([0, 0, 0, 1], device=g.device, dtype=g.dtype)
+        .view(1, 1, 4)
+        .expand(g_.size(0), -1, -1)
+    )
     return torch.cat([torch.cat([Q, q], dim=2), z], dim=1).view(*g.shape[:-2], 4, 4)
 
 

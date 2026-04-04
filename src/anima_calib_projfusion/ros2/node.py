@@ -3,9 +3,11 @@ from __future__ import annotations
 try:
     from rclpy.node import Node
 except ImportError:  # pragma: no cover
+
     class Node:  # type: ignore[override]
         def __init__(self, *args, **kwargs) -> None:
             raise RuntimeError("rclpy is required to use the ROS2 node runtime")
+
 
 from anima_calib_projfusion.inference.pipeline import iterative_calibrate
 from anima_calib_projfusion.inference.service import CalibrationService

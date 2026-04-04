@@ -5,7 +5,9 @@ import torch
 from anima_calib_projfusion.geometry.projection import align_point_groups
 
 
-def build_image_grid(feature_hw: tuple[int, int], device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+def build_image_grid(
+    feature_hw: tuple[int, int], device: torch.device, dtype: torch.dtype
+) -> torch.Tensor:
     feat_h, feat_w = feature_hw
     ys = torch.linspace(-1.0, 1.0, steps=feat_h, device=device, dtype=dtype)
     xs = torch.linspace(-1.0, 1.0, steps=feat_w, device=device, dtype=dtype)

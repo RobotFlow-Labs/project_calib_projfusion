@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import typer
 import torch
+import typer
 
 from anima_calib_projfusion.config import ProjFusionSettings
 from anima_calib_projfusion.data.camera_info import CameraInfo

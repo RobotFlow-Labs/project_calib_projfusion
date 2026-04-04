@@ -32,7 +32,9 @@ def render_projection_overlay(
 ) -> np.ndarray:
     canvas = _to_hwc_uint8(image)
     xyz_cam = apply_transform(extrinsic, xyz)
-    uv = project_points(xyz_cam, camera_info, feature_hw=(camera_info.sensor_h, camera_info.sensor_w))
+    uv = project_points(
+        xyz_cam, camera_info, feature_hw=(camera_info.sensor_h, camera_info.sensor_w)
+    )
     uv = uv.round().to(torch.int64)
     height, width = canvas.shape[:2]
     for u, v in uv.reshape(-1, 2).tolist():

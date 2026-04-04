@@ -4,6 +4,7 @@ Paper: Native-Domain Cross-Attention for Camera-LiDAR Extrinsic Calibration
 Architecture: DINOv2 image encoder + PointGPT point encoder → dual cross-attention
 → dual aggregation → rotation/translation MLP heads → se(3) Lie algebra output.
 """
+
 from __future__ import annotations
 
 import torch
@@ -12,7 +13,10 @@ from torch import nn
 from anima_calib_projfusion.encoders.image_dinov2 import DINOv2ImageEncoder
 from anima_calib_projfusion.encoders.pointgpt import PointGPTEncoder
 from anima_calib_projfusion.model.aggregation import MiniResAggregation
-from anima_calib_projfusion.model.coordinate_alignment import ExtrinsicAwareAligner, build_image_grid
+from anima_calib_projfusion.model.coordinate_alignment import (
+    ExtrinsicAwareAligner,
+    build_image_grid,
+)
 from anima_calib_projfusion.model.cross_attention import ScaleFreeCrossAttention
 from anima_calib_projfusion.model.heads import RegressionHead
 from anima_calib_projfusion.model.positional_encoding import HarmonicEmbedding
@@ -83,18 +87,26 @@ class ProjDualFusion(nn.Module):
 
         # Dual cross-attention branches
         self.rotation_attention = ScaleFreeCrossAttention(
-            embed_dim=feature_dim, num_heads=attention_heads, pos_dim=pos_dim,
+            embed_dim=feature_dim,
+            num_heads=attention_heads,
+            pos_dim=pos_dim,
         )
         self.translation_attention = ScaleFreeCrossAttention(
-            embed_dim=feature_dim, num_heads=attention_heads, pos_dim=pos_dim,
+            embed_dim=feature_dim,
+            num_heads=attention_heads,
+            pos_dim=pos_dim,
         )
 
         # Dual aggregation + regression heads
         self.rotation_aggregation = MiniResAggregation(
-            in_channels=feature_dim, planes=aggregation_planes, output_dim=768,
+            in_channels=feature_dim,
+            planes=aggregation_planes,
+            output_dim=768,
         )
         self.translation_aggregation = MiniResAggregation(
-            in_channels=feature_dim, planes=aggregation_planes, output_dim=768,
+            in_channels=feature_dim,
+            planes=aggregation_planes,
+            output_dim=768,
         )
         self.rotation_head = RegressionHead(input_dim=768, hidden_dims=mlp_hidden_dims)
         self.translation_head = RegressionHead(input_dim=768, hidden_dims=mlp_hidden_dims)
@@ -126,21 +138,17 @@ class ProjDualFusion(nn.Module):
         point_uv = self.aligner(xyz_groups, init_extrinsic, camera_info)  # [B, 128, 2]
 
         # Build image grid coordinates
-        image_grid = build_image_grid(
-            self.feature_hw, img.device, img.dtype
-        ).expand(img.shape[0], -1, -1)  # [B, 512, 2]
+        image_grid = build_image_grid(self.feature_hw, img.device, img.dtype).expand(
+            img.shape[0], -1, -1
+        )  # [B, 512, 2]
 
         # Harmonic positional encoding
         image_pos = self.positional_encoding(image_grid)  # [B, 512, pos_dim]
         point_pos = self.positional_encoding(point_uv)  # [B, 128, pos_dim]
 
         # Dual cross-attention
-        rot_tokens = self.rotation_attention(
-            image_tokens, point_tokens, image_pos, point_pos
-        )
-        tsl_tokens = self.translation_attention(
-            image_tokens, point_tokens, image_pos, point_pos
-        )
+        rot_tokens = self.rotation_attention(image_tokens, point_tokens, image_pos, point_pos)
+        tsl_tokens = self.translation_attention(image_tokens, point_tokens, image_pos, point_pos)
 
         # Unflatten to 2D feature maps
         batch = img.shape[0]

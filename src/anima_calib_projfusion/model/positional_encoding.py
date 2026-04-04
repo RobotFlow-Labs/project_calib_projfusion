@@ -17,7 +17,9 @@ class HarmonicEmbedding(nn.Module):
         self.num_harmonic_functions = num_harmonic_functions
         self.omega_0 = omega_0 if omega_0 is not None else 1.0 / 3.0
         self.append_input = append_input
-        frequencies = self.omega_0 * (2.0 ** torch.arange(num_harmonic_functions, dtype=torch.float32))
+        frequencies = self.omega_0 * (
+            2.0 ** torch.arange(num_harmonic_functions, dtype=torch.float32)
+        )
         self.register_buffer("frequencies", frequencies, persistent=False)
 
     def output_dim(self, input_dim: int) -> int:

@@ -21,7 +21,10 @@ class BenchmarkRunner:
         result.update(
             {
                 "dataset_id": dataset_id,
-                "perturbation_range": f"{perturbation_range[0]:.0f}deg/{perturbation_range[1] * 100:.0f}cm",
+                "perturbation_range": (
+                    f"{perturbation_range[0]:.0f}deg"
+                    f"/{perturbation_range[1] * 100:.0f}cm"
+                ),
                 "checkpoint_name": checkpoint_name,
             }
         )
@@ -34,6 +37,8 @@ class BenchmarkRunner:
         checkpoint_name: str = "anonymous",
     ) -> list[dict[str, float | int | str]]:
         return [
-            self.run_range(dataset_id, perturbation_range, pred_extrinsic, gt_extrinsic, checkpoint_name)
+            self.run_range(
+                dataset_id, perturbation_range, pred_extrinsic, gt_extrinsic, checkpoint_name
+            )
             for perturbation_range, pred_extrinsic, gt_extrinsic in batches
         ]

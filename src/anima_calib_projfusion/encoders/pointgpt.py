@@ -10,6 +10,7 @@ Architecture from reference repo: models/pointgpt/PointGPT.py
 - Encoder_small: Conv1d(3→128→256) + pool + Conv1d(512→512→384) → [B, 128, 384]
 - Morton-like sorting of groups for sequential ordering
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,7 +18,6 @@ from pathlib import Path
 
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
 
@@ -149,8 +149,12 @@ class PointGPTEncoder(nn.Module):
                 encoder_state[new_key] = v
         if encoder_state:
             missing, unexpected = self.encoder.load_state_dict(encoder_state, strict=False)
-            logger.info("Loaded PointGPT encoder from %s (missing=%d, unexpected=%d)",
-                        path, len(missing), len(unexpected))
+            logger.info(
+                "Loaded PointGPT encoder from %s (missing=%d, unexpected=%d)",
+                path,
+                len(missing),
+                len(unexpected),
+            )
         else:
             logger.warning("No encoder keys found in %s, using random init", path)
 
@@ -175,30 +179,28 @@ class PointGPTEncoder(nn.Module):
 
         # FPS: select group centers
         centroid_idx = _farthest_point_sample_cuda(points, self.num_groups)  # [B, G]
-        centroids = points.gather(
-            1, centroid_idx.unsqueeze(-1).expand(-1, -1, 3)
-        )  # [B, G, 3]
+        centroids = points.gather(1, centroid_idx.unsqueeze(-1).expand(-1, -1, 3))  # [B, G, 3]
 
         # KNN: find neighbors for each group
         neighbor_idx = _knn_gather(points, centroids, self.group_size)  # [B, G, K]
 
         # Gather neighbor points
         idx_flat = neighbor_idx.reshape(batch, -1)  # [B, G*K]
-        neighbors = points.gather(
-            1, idx_flat.unsqueeze(-1).expand(-1, -1, 3)
-        ).reshape(batch, self.num_groups, self.group_size, 3)
+        neighbors = points.gather(1, idx_flat.unsqueeze(-1).expand(-1, -1, 3)).reshape(
+            batch, self.num_groups, self.group_size, 3
+        )
 
         # Normalize to local coordinates
         local_coords = neighbors - centroids.unsqueeze(2)  # [B, G, K, 3]
 
         # Morton sorting (group ordering for sequential patterns)
         sorted_idx = _simplified_morton_sort(centroids, self.num_groups)
-        local_coords = local_coords.reshape(
-            batch * self.num_groups, self.group_size, 3
-        )[sorted_idx].reshape(batch, self.num_groups, self.group_size, 3)
-        centroids = centroids.reshape(
-            batch * self.num_groups, 3
-        )[sorted_idx].reshape(batch, self.num_groups, 3)
+        local_coords = local_coords.reshape(batch * self.num_groups, self.group_size, 3)[
+            sorted_idx
+        ].reshape(batch, self.num_groups, self.group_size, 3)
+        centroids = centroids.reshape(batch * self.num_groups, 3)[sorted_idx].reshape(
+            batch, self.num_groups, 3
+        )
 
         # Encode groups
         tokens = self.encoder(local_coords)  # [B, G, C]

@@ -5,7 +5,6 @@ from pathlib import Path
 import torch
 from torch import nn
 
-
 REFERENCE_KEY_REWRITES = (
     ("img_encoder.", "image_encoder."),
     ("pcd_encoder.", "point_encoder."),

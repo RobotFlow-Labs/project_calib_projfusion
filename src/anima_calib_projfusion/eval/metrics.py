@@ -20,7 +20,9 @@ class CalibrationMetrics:
 def _inverse_transform(transform: torch.Tensor) -> torch.Tensor:
     rotation = transform[..., :3, :3]
     translation = transform[..., :3, 3]
-    inverse = torch.eye(4, dtype=transform.dtype, device=transform.device).expand(transform.shape).clone()
+    inverse = (
+        torch.eye(4, dtype=transform.dtype, device=transform.device).expand(transform.shape).clone()
+    )
     inverse[..., :3, :3] = rotation.transpose(-1, -2)
     inverse[..., :3, 3] = -(rotation.transpose(-1, -2) @ translation.unsqueeze(-1)).squeeze(-1)
     return inverse
@@ -41,7 +43,9 @@ def _matrix_to_euler_xyz_deg(rotation: torch.Tensor) -> torch.Tensor:
     return torch.rad2deg(torch.stack((x, y, z), dim=-1)).abs()
 
 
-def per_sample_errors(pred_extrinsic: torch.Tensor, gt_extrinsic: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def per_sample_errors(
+    pred_extrinsic: torch.Tensor, gt_extrinsic: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
     delta = pred_extrinsic @ _inverse_transform(gt_extrinsic)
     rotation_error_deg = _matrix_to_euler_xyz_deg(delta[..., :3, :3]).norm(dim=-1)
     translation_error_cm = delta[..., :3, 3].abs().norm(dim=-1) * 100.0
