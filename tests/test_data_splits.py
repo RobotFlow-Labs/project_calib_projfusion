@@ -1,19 +1,28 @@
-from anima_calib_projfusion.data.perturbation import DEFAULT_PERTURBATION_RANGES, sample_uniform_perturbation
-from anima_calib_projfusion.data.splits import KITTI_TEST, KITTI_TRAIN, KITTI_VAL
+import torch
+
+from anima_calib_projfusion.data.perturbation import sample_perturbation
 
 
-def test_kitti_split_lengths():
-    assert len(KITTI_TRAIN) == 11
-    assert len(KITTI_VAL) == 3
-    assert len(KITTI_TEST) == 5
-    assert KITTI_TEST == ["13", "14", "15", "16", "18"]
+def test_sample_perturbation_shape():
+    T = sample_perturbation(batch_size=4, max_deg=15.0, max_tran=0.15)
+    assert T.shape == (4, 4, 4)
 
 
-def test_default_perturbation_ranges():
-    assert [(entry.rotation_deg, entry.translation_m) for entry in DEFAULT_PERTURBATION_RANGES] == [
-        (15.0, 0.15),
-        (10.0, 0.25),
-        (10.0, 0.5),
-    ]
-    samples = sample_uniform_perturbation(4, DEFAULT_PERTURBATION_RANGES[0])
-    assert samples.shape == (4, 6)
+def test_sample_perturbation_valid_se3():
+    """Perturbation matrices should be valid SE(3): det(R)=1, last row=[0,0,0,1]."""
+    T = sample_perturbation(batch_size=8, max_deg=10.0, max_tran=0.5)
+    # Check last row
+    last_row = T[:, 3, :]
+    expected = torch.tensor([0.0, 0.0, 0.0, 1.0]).expand(8, -1)
+    assert torch.allclose(last_row, expected, atol=1e-6)
+    # Check rotation determinant ~ 1
+    R = T[:, :3, :3]
+    dets = torch.det(R)
+    assert torch.allclose(dets, torch.ones(8), atol=1e-5)
+
+
+def test_sample_perturbation_min_max():
+    """With min_deg > 0, perturbation should not be identity."""
+    T = sample_perturbation(batch_size=4, max_deg=10.0, max_tran=0.5, min_deg=5.0, min_tran=0.1)
+    identity = torch.eye(4).unsqueeze(0).expand(4, -1, -1)
+    assert not torch.allclose(T, identity, atol=1e-3)

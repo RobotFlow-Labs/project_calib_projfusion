@@ -3,9 +3,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from anima_calib_projfusion.data.camera_info import CameraInfo
 from anima_calib_projfusion.geometry.projection import project_points
-from anima_calib_projfusion.geometry.se3 import apply_transform
 
 
 def _to_hwc_uint8(image: torch.Tensor | np.ndarray) -> np.ndarray:
@@ -27,15 +25,19 @@ def render_projection_overlay(
     image: torch.Tensor | np.ndarray,
     xyz: torch.Tensor,
     extrinsic: torch.Tensor,
-    camera_info: CameraInfo,
+    camera_info: dict,
     color: tuple[int, int, int] = (0, 255, 0),
 ) -> np.ndarray:
+    """Render point cloud projection overlay on image."""
     canvas = _to_hwc_uint8(image)
-    xyz_cam = apply_transform(extrinsic, xyz)
-    uv = project_points(
-        xyz_cam, camera_info, feature_hw=(camera_info.sensor_h, camera_info.sensor_w)
-    )
-    uv = uv.round().to(torch.int64)
+    # Transform to camera frame
+    R = extrinsic[:3, :3]
+    t = extrinsic[:3, 3:]
+    xyz_cam = (R @ xyz.T + t).T.unsqueeze(0)  # [1, N, 3]
+    sensor_h = camera_info.get("sensor_h", canvas.shape[0])
+    sensor_w = camera_info.get("sensor_w", canvas.shape[1])
+    uv = project_points(xyz_cam, camera_info, feature_hw=(sensor_h, sensor_w))
+    uv = uv.squeeze(0).round().to(torch.int64)
     height, width = canvas.shape[:2]
     for u, v in uv.reshape(-1, 2).tolist():
         if 0 <= u < width and 0 <= v < height:

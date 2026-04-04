@@ -5,7 +5,6 @@ from typing import Any
 import numpy as np
 import torch
 
-from anima_calib_projfusion.data.camera_info import CameraInfo
 from anima_calib_projfusion.inference.pipeline import CalibrationBatch
 
 
@@ -27,7 +26,9 @@ def _image_to_tensor(image_msg: Any) -> torch.Tensor:
 
 
 def _points_to_tensor(pointcloud_msg: Any) -> torch.Tensor:
-    points = np.asarray(_value_from_message(pointcloud_msg, "points"), dtype=np.float32)
+    points = np.asarray(
+        _value_from_message(pointcloud_msg, "points"), dtype=np.float32
+    )
     return torch.from_numpy(points)
 
 
@@ -39,21 +40,20 @@ def ros_to_batch(
 ) -> CalibrationBatch:
     image = _image_to_tensor(image_msg).unsqueeze(0)
     point_cloud = _points_to_tensor(pointcloud_msg).unsqueeze(0)
-    camera = CameraInfo.from_mapping(
-        {
-            "fx": _value_from_message(camera_info_msg, "fx"),
-            "fy": _value_from_message(camera_info_msg, "fy"),
-            "cx": _value_from_message(camera_info_msg, "cx"),
-            "cy": _value_from_message(camera_info_msg, "cy"),
-            "sensor_h": _value_from_message(camera_info_msg, "sensor_h"),
-            "sensor_w": _value_from_message(camera_info_msg, "sensor_w"),
-        }
-    )
+    camera = {
+        "fx": torch.tensor([float(_value_from_message(camera_info_msg, "fx"))]),
+        "fy": torch.tensor([float(_value_from_message(camera_info_msg, "fy"))]),
+        "cx": torch.tensor([float(_value_from_message(camera_info_msg, "cx"))]),
+        "cy": torch.tensor([float(_value_from_message(camera_info_msg, "cy"))]),
+        "sensor_h": int(_value_from_message(camera_info_msg, "sensor_h")),
+        "sensor_w": int(_value_from_message(camera_info_msg, "sensor_w")),
+    }
     if init_extrinsic_msg is None:
         init_extrinsic = torch.eye(4, dtype=torch.float32).unsqueeze(0)
     else:
         init_extrinsic = torch.tensor(
-            _value_from_message(init_extrinsic_msg, "matrix"), dtype=torch.float32
+            _value_from_message(init_extrinsic_msg, "matrix"),
+            dtype=torch.float32,
         ).unsqueeze(0)
     return CalibrationBatch(
         image=image,

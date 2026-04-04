@@ -7,7 +7,12 @@ def test_service_returns_prediction_bundle():
     request = CalibrationRequest(
         image=[[[0.0] * 448 for _ in range(224)] for _ in range(3)],
         point_cloud=[[0.0, 0.0, 1.0] for _ in range(8192)],
-        init_extrinsic=[[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]],
+        init_extrinsic=[
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ],
         camera_info=CameraInfoPayload(
             fx=700.0,
             fy=700.0,

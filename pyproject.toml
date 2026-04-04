@@ -51,5 +51,13 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/anima_calib_projfusion"]
 
+[tool.uv]
+extra-index-url = ["https://download.pytorch.org/whl/cu128"]
+
+[tool.uv.sources]
+torch = { index = "https://download.pytorch.org/whl/cu128" }
+torchvision = { index = "https://download.pytorch.org/whl/cu128" }
+torchaudio = { index = "https://download.pytorch.org/whl/cu128" }
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

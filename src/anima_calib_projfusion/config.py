@@ -17,16 +17,16 @@ class ProjectConfig(BaseModel):
     python_version: str = "3.11"
     paper_arxiv: str = "2603.29414"
     paper_title: str = (
-        "Native-Domain Cross-Attention for Camera-LiDAR Extrinsic Calibration Under Large "
-        "Initial Perturbations"
+        "Native-Domain Cross-Attention for Camera-LiDAR Extrinsic"
+        " Calibration Under Large Initial Perturbations"
     )
 
 
 class RuntimeConfig(BaseModel):
     backend: str = "auto"
     device: str = "auto"
-    precision: str = "fp32"
-    torch_variant: str = "cpu"
+    precision: str = "fp16"
+    torch_variant: str = "cu128"
 
 
 class ModelConfig(BaseModel):
@@ -52,21 +52,43 @@ class TrainingConfig(BaseModel):
     weight_decay: float = 1e-2
     scheduler: str = "cosine-warmup"
     epochs: int = 30
-    warmup_steps: int = 2
+    warmup_epochs: int = 2
+    batch_size: int = 256
+    precision: str = "fp16"
+    gradient_clip: float = 1.0
+    seed: int = 42
 
 
 class DataConfig(BaseModel):
-    dataset_root: Path = Path("/Volumes/AIFlowDev/RobotFlowLabs/datasets/datasets")
-    artifact_root: Path = Path("/Volumes/AIFlowDev/RobotFlowLabs/datasets/artifacts")
-    model_root: Path = Path("/Volumes/AIFlowDev/RobotFlowLabs/datasets/models")
-    kitti_root: Path = Path("/mnt/forge-data/datasets/kitti_odometry")
+    kitti_root: Path = Path("/mnt/forge-data/datasets/kitti")
     nuscenes_root: Path = Path("/mnt/forge-data/datasets/nuscenes")
+    pcd_sample_num: int = 8192
+    max_deg: float = 10.0
+    max_tran: float = 0.5
+    num_workers: int = 4
+    train_ratio: float = 0.90
+    val_ratio: float = 0.05
 
 
 class PretrainedConfig(BaseModel):
-    dinov2: Path = Path("/mnt/forge-data/models/vision/dinov2_vits14")
-    pointgpt_kitti: Path = Path("/mnt/forge-data/models/pointgpt/kitti_pointgpt_tiny.pth")
-    pointgpt_nuscenes: Path = Path("/mnt/forge-data/models/pointgpt/nuscenes_pointgpt_tiny.ckpt")
+    dinov2: Path = Path(
+        "/mnt/forge-data/models/calib_projfusion/dinov2_vits14_timm.pth"
+    )
+
+
+class CheckpointConfig(BaseModel):
+    output_dir: Path = Path(
+        "/mnt/artifacts-datai/checkpoints/project_calib_projfusion"
+    )
+    keep_top_k: int = 2
+    metric: str = "val_loss"
+    mode: str = "min"
+
+
+class LoggingConfig(BaseModel):
+    log_dir: Path = Path(
+        "/mnt/artifacts-datai/logs/project_calib_projfusion"
+    )
 
 
 class HardwareConfig(BaseModel):
@@ -82,6 +104,8 @@ class ProjFusionSettings(BaseSettings):
     training: TrainingConfig = Field(default_factory=TrainingConfig)
     data: DataConfig = Field(default_factory=DataConfig)
     pretrained: PretrainedConfig = Field(default_factory=PretrainedConfig)
+    checkpoint: CheckpointConfig = Field(default_factory=CheckpointConfig)
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)
     hardware: HardwareConfig = Field(default_factory=HardwareConfig)
 
     model_config = SettingsConfigDict(
